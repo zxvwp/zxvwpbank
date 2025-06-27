@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ZXP Currency Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #111;
+      --card: #1c1c1c;
+      --accent: #00ffd1;
+      --text: #fff;
+      --success: #00ff88;
+      --danger: #ff4d4d;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(0, 255, 209, 0.1);
+    }
+
+    .header {
+      text-align: center;
+    }
+
+    .price {
+      font-size: 36px;
+      margin: 10px 0;
+    }
+
+    .change {
+      font-size: 16px;
+    }
+
+    .up {
+      color: var(--success);
+    }
+
+    .down {
+      color: var(--danger);
+    }
+
+    canvas {
+      width: 100%;
+      max-height: 300px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 8px;
+      border-bottom: 1px solid #333;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Info Card -->
+  <div class="card header">
+    <h2>Ɐ̶ ZXP Dashboard</h2>
+    <div class="price" id="price">RM10.00</div>
+    <div class="change" id="change">+0.00%</div>
+    <div class="footer">Updated live every 5 seconds</div>
+  </div>
+
+  <!-- Chart -->
+  <div class="card">
+    <h3>Price Chart</h3>
+    <canvas id="priceChart"></canvas>
+  </div>
+
+  <!-- Transactions -->
+  <div class="card">
+    <h3>Transaction History</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Amount</th>
+          <th>Type</th>
+        </tr>
+      </thead>
+      <tbody id="txHistory">
+        <!-- Transactions will be added here -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  let basePrice = 10.00;
+  let currentPrice = basePrice;
+  let priceData = [basePrice];
+  let labels = [new Date().toLocaleTimeString()];
+
+  const priceEl = document.getElementById("price");
+  const changeEl = document.getElementById("change");
+  const txHistory = document.getElementById("txHistory");
+
+  const ctx = document.getElementById("priceChart").getContext("2d");
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'ZXP Price (RM)',
+        data: priceData,
+        borderColor: '#00ffd1',
+        backgroundColor: 'rgba(0,255,209,0.05)',
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false }},
+      scales: {
+        x: { display: false },
+        y: { beginAtZero: false }
+      }
+    }
+  });
+
+  function simulateTransaction(priceChange) {
+    const type = priceChange >= 0 ? "Buy" : "Sell";
+    const amount = (Math.random() * 5 + 1).toFixed(2);
+    const time = new Date().toLocaleTimeString();
+    const row = `<tr><td>${time}</td><td>${amount} ZXP</td><td>${type}</td></tr>`;
+    txHistory.innerHTML = row + txHistory.innerHTML;
+
+    // Limit to 10 transactions
+    const rows = txHistory.querySelectorAll('tr');
+    if (rows.length > 10) txHistory.removeChild(rows[rows.length - 1]);
+  }
+
+  function simulateMarket() {
+    let changePercent = (Math.random() * 2 - 1).toFixed(2);
+    let newPrice = (currentPrice * (1 + changePercent / 100)).toFixed(2);
+
+    let diff = (newPrice - currentPrice).toFixed(2);
+    currentPrice = parseFloat(newPrice);
+
+    priceEl.innerText = `RM${newPrice}`;
+    if (diff >= 0) {
+      changeEl.innerText = `+${changePercent}%`;
+      changeEl.className = "change up";
+    } else {
+      changeEl.innerText = `${changePercent}%`;
+      changeEl.className = "change down";
+    }
+
+    chart.data.labels.push(new Date().toLocaleTimeString());
+    chart.data.datasets[0].data.push(currentPrice);
+    if (chart.data.labels.length > 20) {
+      chart.data.labels.shift();
+      chart.data.datasets[0].data.shift();
+    }
+    chart.update();
+
+    simulateTransaction(diff);
+  }
+
+  setInterval(simulateMarket, 5000);
+</script>
+
+</body>
+</html>
